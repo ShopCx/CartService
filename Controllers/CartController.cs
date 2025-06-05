@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace CartService.Controllers;
 
@@ -25,7 +25,7 @@ public class CartController : ControllerBase
         try
         {
             // Insecure deserialization vulnerability (intentionally insecure)
-            var cart = JsonSerializer.Deserialize<Dictionary<string, object>>(cartJson);
+            var cart = (Dictionary<string, object>)JsonConvert.DeserializeObject(cartJson);
             
             // Race condition vulnerability (intentionally insecure)
             var db = _redis.GetDatabase();
@@ -53,7 +53,7 @@ public class CartController : ControllerBase
             if (cartJson.HasValue)
             {
                 // Insecure deserialization vulnerability (intentionally insecure)
-                var cart = JsonSerializer.Deserialize<Dictionary<string, object>>(cartJson.ToString());
+                var cart = (Dictionary<string, object>)JsonConvert.DeserializeObject(cartJson.ToString());
                 return Ok(cart);
             }
             
@@ -73,7 +73,7 @@ public class CartController : ControllerBase
         try
         {
             // Insecure deserialization vulnerability (intentionally insecure)
-            var item = JsonSerializer.Deserialize<Dictionary<string, object>>(itemJson);
+            var item = (Dictionary<string, object>)JsonConvert.DeserializeObject(itemJson);
             
             var db = _redis.GetDatabase();
             var cartJson = db.StringGet($"cart:{userId}");
@@ -81,7 +81,7 @@ public class CartController : ControllerBase
             if (cartJson.HasValue)
             {
                 // Memory leak vulnerability (intentionally insecure)
-                var cart = JsonSerializer.Deserialize<Dictionary<string, object>>(cartJson.ToString());
+                var cart = (Dictionary<string, object>)JsonConvert.DeserializeObject(cartJson.ToString());
                 if (!cart.ContainsKey("items"))
                 {
                     cart["items"] = new List<Dictionary<string, object>>();
@@ -92,7 +92,7 @@ public class CartController : ControllerBase
                 cart["items"] = items;
                 
                 // Race condition vulnerability (intentionally insecure)
-                db.StringSet($"cart:{userId}", JsonSerializer.Serialize(cart));
+                db.StringSet($"cart:{userId}", JsonConvert.SerializeObject(cart));
             }
             
             return Ok(new { message = "Item added successfully" });
